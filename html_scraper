@@ -1,0 +1,68 @@
+import os
+import requests
+from urllib.parse import urljoin
+import glob
+from bs4 import BeautifulSoup
+import tkinter as tk
+from tkinter import filedialog
+
+# root = tk.Tk()
+# root.withdraw()
+# # file_path = filedialog.askopenfilename()
+# file_path = filedialog.askdirectory()
+
+from tkinter import *
+from tkinter import filedialog
+import tkinter.font as font
+
+gui_win = Tk()
+gui_win.title('Course files downloader')
+gui_win.geometry('400x100')
+gui_win.grid_rowconfigure(2, weight = 1)
+gui_win.grid_columnconfigure(0, weight = 1)
+workDir=StringVar()
+# define font
+# apply font to the button label
+
+def directory():
+    # get a directory path by user
+    filepath=filedialog.askdirectory(initialdir=os.getcwd(),
+                                    title="Dialog box")
+    workDir.set(filepath)
+
+
+myFont = font.Font(family='Helvetica', size=10)
+dialog_btn = Button(gui_win, text='Select the folder containing the .html file(s)', command = directory,  bg='#0052cc', fg='#ffffff', font=myFont).grid(row=2, padx=5, pady=5,sticky="ns")
+label_path=Label(gui_win,text=workDir,font=('italic 14'))
+
+gui_win.mainloop()
+
+
+
+# for each html offline file in the given path
+#workDir= input ("Paste here the path of the folder containing the .html files: (leave empty for current working folder)\n")
+if len(workDir)<2:
+    workDir= os.getcwd()
+
+workDir=os.path.normpath(workDir)
+path= os.path.join(workDir,"*.html")
+# listing all files
+files = glob.glob(path)
+files_names= [os.path.basename(path) for path in files]
+print("HTML pages found:\n", files_names)
+
+for file in files:
+    dir,filename= os.path.split(file)
+    # create a folder for each html list of files
+    folder_location=os.path.join(dir, filename.rsplit('.', 1)[0])
+    #If there is no such folder, the script will create one automatically
+    if not os.path.exists(folder_location.rsplit('.', 1)[0]):os.mkdir(folder_location.rsplit('.', 1)[0])
+
+    with open(file, 'r', encoding='utf-8', errors='ignore') as page:
+        soup = BeautifulSoup(page.read(), 'html.parser')
+
+        for link in soup.select("a[href$='.pdf']"):
+            #Name the pdf files using the last portion of each link which are unique in this case
+            filename = os.path.join(folder_location,link['href'].split('/')[-1])
+            with open(filename, 'wb') as f:
+                f.write(requests.get(urljoin(file,link['href'])).content)
