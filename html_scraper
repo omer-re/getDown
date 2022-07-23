@@ -1,68 +1,113 @@
-import os
+# -*- coding: utf-8 -*-
+from tkinter import *
+from tkinter.filedialog import *
+from tkinter.filedialog import askopenfilename, asksaveasfilename, askdirectory
+import sys, os
+from tkinter import ttk
+from functools import partial
+# import time
+# from functools import partial
+import fnmatch
+import winsound
+import tqdm
+import unicodedata
+from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urljoin
-import glob
-from bs4 import BeautifulSoup
-import tkinter as tk
-from tkinter import filedialog
+from tqdm import trange
 
-# root = tk.Tk()
-# root.withdraw()
-# # file_path = filedialog.askopenfilename()
-# file_path = filedialog.askdirectory()
+tqdm_colors= ['RED', 'GREEN', 'YELLOW', 'BLUE', 'MAGENTA', 'CYAN']
+TQDM_COLORS_OPTIONS=len(tqdm_colors)
+progress_indicator=["Working","Working.","Working..","Working...",]
 
-from tkinter import *
-from tkinter import filedialog
-import tkinter.font as font
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
-gui_win = Tk()
-gui_win.title('Course files downloader')
-gui_win.geometry('400x100')
-gui_win.grid_rowconfigure(2, weight = 1)
-gui_win.grid_columnconfigure(0, weight = 1)
-workDir=StringVar()
-# define font
-# apply font to the button label
+def find_files(directory, pattern):
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = os.path.join(root, basename)
+                yield filename
 
-def directory():
-    # get a directory path by user
-    filepath=filedialog.askdirectory(initialdir=os.getcwd(),
-                                    title="Dialog box")
-    workDir.set(filepath)
+def scrape_files(file):
+    if (file==None):
+        eprint("Invalid input")
+    else:
+        dirname,filename= os.path.split(file)
+        # create a folder for each html list of files
+        folder_location=os.path.join(dirname, filename.rsplit('.', 1)[0])
+        #If there is no such folder, the script will create one automatically
+        if not os.path.exists(folder_location.rsplit('.', 1)[0]):os.mkdir(folder_location.rsplit('.', 1)[0])
+
+        with open(file, 'r', encoding='utf-8', errors='ignore') as page:
+            soup = BeautifulSoup(page.read(), 'html.parser')
+        with tqdm.tqdm( position=0, leave=True) as pbar:
+            j=0
+            for link in tqdm.tqdm((soup.select("a[href$='.pdf']")), position=0, leave=True, colour=tqdm_colors[j%TQDM_COLORS_OPTIONS]):
+                foldername.set(progress_indicator[j%len(progress_indicator)])
+                Label(root, textvariable=foldername,width=20).grid(row=4, column=1, sticky=(N,S,E,W))
+                j+=1
+                #Name the pdf files using the last portion of each link which are unique in this case
+                filename = os.path.join(folder_location,link['href'].split('/')[-1])
+                with open(filename, 'wb') as f:
+                    f.write(requests.get(urljoin(file,link['href'])).content)
+
+                pbar.update()
 
 
-myFont = font.Font(family='Helvetica', size=10)
-dialog_btn = Button(gui_win, text='Select the folder containing the .html file(s)', command = directory,  bg='#0052cc', fg='#ffffff', font=myFont).grid(row=2, padx=5, pady=5,sticky="ns")
-label_path=Label(gui_win,text=workDir,font=('italic 14'))
 
-gui_win.mainloop()
+def get_html_files():
+    for htmlfile in find_files(filename1.get(), '*.html'):
+        tree_walk_list.append(htmlfile)
+
+    print(tree_walk_list)
+    # get filename of each
+    i=0
+    for htmlfile in tqdm.tqdm(tree_walk_list, colour=tqdm_colors[i%TQDM_COLORS_OPTIONS]):
+        scrape_files(htmlfile)
+        foldername.set("working")
+        i+=1
+
+    winsound.Beep(800,400)
+    winsound.Beep(500,600)
+    winsound.Beep(700,800)
+    foldername.set("DONE")
+    print("DONE")
+
+def load1():
+    f = askdirectory()
+    filename1.set(f)
+    print(f)
+    display_text=filename1.get().rsplit("/")[-2:]
+    foldername.set(str("..."+display_text[0]+"/"+display_text[1]+"/"))
+
+root=Tk()
+root.title('Course files downloader')
+filename1=StringVar()
+foldername=StringVar()
+stamp_text=StringVar()
+
+if __name__ == "__main__":
+    # get all files list
+    tree_walk_list = []
+
+    button1=Button(root, text="Choose folder", command=load1, font='Helvetica 14 bold',height = 4).grid(row=1, column=0)
+
+    Label(root, textvariable=foldername,width=20).grid(row=3, column=1, sticky=(N,S,E,W))
+
+
+    button2=Button(root, text="Get files", command=get_html_files,font='Helvetica 14 bold', fg="red", height =4).grid(row=1, column=2,sticky=E)
+
+
+    Label(root, text="\n\n\nOmer Reuveni\nOmer@Solution-oriented.com", font='Helvetica 10',fg="blue", justify=LEFT).grid(row=6, column=0, sticky="w")
+
+    root.mainloop()
+
+
+#root.iconbitmap( resource_path('./icon.ico'))
 
 
 
-# for each html offline file in the given path
-#workDir= input ("Paste here the path of the folder containing the .html files: (leave empty for current working folder)\n")
-if len(workDir)<2:
-    workDir= os.getcwd()
 
-workDir=os.path.normpath(workDir)
-path= os.path.join(workDir,"*.html")
-# listing all files
-files = glob.glob(path)
-files_names= [os.path.basename(path) for path in files]
-print("HTML pages found:\n", files_names)
 
-for file in files:
-    dir,filename= os.path.split(file)
-    # create a folder for each html list of files
-    folder_location=os.path.join(dir, filename.rsplit('.', 1)[0])
-    #If there is no such folder, the script will create one automatically
-    if not os.path.exists(folder_location.rsplit('.', 1)[0]):os.mkdir(folder_location.rsplit('.', 1)[0])
-
-    with open(file, 'r', encoding='utf-8', errors='ignore') as page:
-        soup = BeautifulSoup(page.read(), 'html.parser')
-
-        for link in soup.select("a[href$='.pdf']"):
-            #Name the pdf files using the last portion of each link which are unique in this case
-            filename = os.path.join(folder_location,link['href'].split('/')[-1])
-            with open(filename, 'wb') as f:
-                f.write(requests.get(urljoin(file,link['href'])).content)
