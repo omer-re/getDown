@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from tkinter import *
-from tkinter.filedialog import *
-from tkinter.filedialog import askopenfilename, asksaveasfilename, askdirectory
-import sys, os
+from tkinter.filedialog import askdirectory
+import os
 from tkinter import ttk
 from functools import partial
 import fnmatch
-import winsound
 import unicodedata
 from bs4 import BeautifulSoup
 import requests
@@ -123,9 +121,7 @@ def get_html_files():
             continue
         foldername.set("working")
 
-    winsound.Beep(800,400)
-    winsound.Beep(500,600)
-    winsound.Beep(700,800)
+
     foldername.set("DONE")
     print("DONE")
 
